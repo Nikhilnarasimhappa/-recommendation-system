@@ -1,0 +1,64 @@
+import pandas as pd
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+movies = pd.DataFrame({
+    "movieId": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+    "title": ["Toy Story", "The Shawshank Redemption", "The Godfather", "The Dark Knight", "12 Angry Men", "Finding Nemo", "The Green Mile", "Goodfellas", "The Avengers", "A Few Good Men"],
+    "genre": ["Animation Comedy", "Drama", "Crime Drama", "Action Thriller", "Drama", "Animation Comedy", "Drama", "Crime Drama", "Action Thriller", "Drama"],
+    "director": ["John Lasseter", "Frank Darabont", "Francis Ford Coppola", "Christopher Nolan", "Sidney Lumet", "John Lasseter", "Frank Darabont", "Martin Scorsese", "Joss Whedon", "Rob Reiner"],
+    "description": [
+        "A toy cowboy comes to life.",
+        "A banker is wrongly convicted of murder.",
+        "The aging patriarch of an organized crime dynasty transfers control to his youngest son.",
+        "Batman, Gordon and Harvey Dent are forced to deal with the chaos unleashed by an anarchist mastermind.",
+        "A jury holdout attempts to prevent a miscarriage of justice.",
+        "A clownfish embarks on a journey to find his son.",
+        "A death row supervisor develops a bond with a man who possesses supernatural healing powers.",
+        "The story of Henry Hill and his life in the mob, covering his relationship with his wife and his mob partners.",
+        "Nick Fury recruits Iron Man, Captain America, the Hulk, and Thor to save the world from an alien invasion.",
+        "Two U.S. Marines are accused of murder and a court-martial is convened to try them."
+    ]
+})
+
+
+movies['combined_features'] = movies['genre'] + " " + movies['director'] + " " + movies['description']
+
+
+vectorizer = TfidfVectorizer(stop_words='english')
+
+
+combined_vectors = vectorizer.fit_transform(movies['combined_features'])
+
+
+cosine_sim = cosine_similarity(combined_vectors, combined_vectors)
+
+
+def get_movie_recommendation(user_input, top_n=5):
+    
+    user_vector = vectorizer.transform([user_input])
+
+    
+    user_similarity = cosine_similarity(user_vector, combined_vectors).flatten()
+
+    
+    sorted_similarity_idx = np.argsort(user_similarity)[::-1]
+
+    recommendations = []
+    for idx in sorted_similarity_idx[:top_n]:
+        title = movies.iloc[idx]['title']
+        similarity_score = user_similarity[idx]
+        recommendations.append((title, similarity_score))
+
+    return recommendations
+
+
+user_input = input("Enter a movie description, genre, or director: ")
+
+
+recommendations = get_movie_recommendation(user_input, top_n=5)
+
+print("Recommended movies:")
+for title, score in recommendations:
+    print(f"{title} (Similarity score: {score:.2f})")
